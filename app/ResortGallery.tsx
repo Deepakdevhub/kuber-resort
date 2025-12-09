@@ -1,4 +1,4 @@
-'use client'; // This command enables clicks and animations
+'use client';
 
 import { useState } from 'react';
 import Image from 'next/image';
@@ -8,11 +8,9 @@ import "yet-another-react-lightbox/styles.css";
 import imageUrlBuilder from '@sanity/image-url';
 import { client } from '@/sanity/lib/client';
 
-// 1. Setup Sanity Image Optimizer
 const builder = imageUrlBuilder(client);
 
-// This function forces Sanity to convert images to WebP and resize them to max 1200px width
-// This solves your 5MB -> 50KB requirement!
+// Optimize images: Resize to 1200px width and convert to WebP
 function urlFor(source: any) {
   return builder.image(source).width(1200).auto('format').url();
 }
@@ -21,10 +19,8 @@ export default function ResortGallery({ sections }: { sections: any[] }) {
   const [open, setOpen] = useState(false);
   const [slides, setSlides] = useState<any[]>([]);
 
-  // Function to open the lightbox with specific images
   const handleOpenGallery = (sanityImages: any[]) => {
     if (!sanityImages) return;
-    // Convert Sanity image objects to simple URLs for the lightbox
     const gallerySlides = sanityImages.map((img: any) => ({ src: urlFor(img) }));
     setSlides(gallerySlides);
     setOpen(true);
@@ -35,14 +31,14 @@ export default function ResortGallery({ sections }: { sections: any[] }) {
   }
 
   return (
-    <div className="space-y-24">
+    <div className="space-y-16 lg:space-y-24">
       {sections.map((section, index) => {
         const isEven = index % 2 === 0;
         const images = section.images || [];
         
-        // Generate optimized URLs for the preview cards (smaller size for speed)
+        // Preview images (smaller for speed)
         const previewImages = images.map((img: any) => 
-          builder.image(img).width(600).auto('format').url()
+          builder.image(img).width(800).auto('format').url()
         );
 
         return (
@@ -50,46 +46,55 @@ export default function ResortGallery({ sections }: { sections: any[] }) {
             key={section._id}
             initial={{ opacity: 0, y: 50 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.8 }}
-            className={`flex flex-col ${isEven ? 'lg:flex-row' : 'lg:flex-row-reverse'} items-center gap-12 px-6 lg:px-20 overflow-hidden`}
+            viewport={{ once: true, margin: "-50px" }} // Triggers earlier on mobile
+            transition={{ duration: 0.6 }} // Faster animation for mobile smoothness
+            className={`flex flex-col ${isEven ? 'lg:flex-row' : 'lg:flex-row-reverse'} items-center gap-8 lg:gap-12 px-6 lg:px-20 overflow-hidden`}
           >
             {/* Text Area */}
-            <div className="flex-1 space-y-6">
-              <h2 className="text-4xl lg:text-5xl font-serif text-emerald-950 font-medium">
+            <div className="flex-1 space-y-4 lg:space-y-6 w-full">
+              <h2 className="text-3xl lg:text-5xl font-serif text-emerald-950 font-medium">
                 {section.title}
               </h2>
-              <div className="h-1 w-24 bg-amber-500 rounded-full"></div>
-              <p className="text-lg text-gray-600 leading-relaxed">
+              <div className="h-1 w-20 lg:w-24 bg-amber-500 rounded-full"></div>
+              <p className="text-base lg:text-lg text-gray-600 leading-relaxed">
                 {section.description}
               </p>
               <button 
                 onClick={() => handleOpenGallery(images)}
-                className="group flex items-center gap-2 text-emerald-800 font-bold hover:text-amber-600 transition-colors uppercase tracking-widest text-sm"
+                className="group flex items-center gap-2 text-emerald-800 font-bold hover:text-amber-600 transition-colors uppercase tracking-widest text-sm pt-2"
               >
                 View Gallery <span className="group-hover:translate-x-1 transition-transform">→</span>
               </button>
             </div>
 
-            {/* Image Grid Area (Clickable) */}
+            {/* SMART IMAGE GRID 
+               Mobile: h-64 (one big card)
+               Desktop: h-96 (mosaic grid)
+            */}
             <div 
-              className="flex-1 w-full grid grid-cols-2 gap-4 h-96 relative cursor-pointer group"
+              className="flex-1 w-full grid grid-cols-1 lg:grid-cols-2 gap-4 h-64 lg:h-96 relative cursor-pointer group"
               onClick={() => handleOpenGallery(images)}
             >
+              {/* Image 1 (Big Hero) */}
               {previewImages[0] ? (
-                <div className="relative h-full w-full rounded-2xl overflow-hidden shadow-2xl row-span-2 border-4 border-white">
+                <div className="relative h-full w-full rounded-2xl overflow-hidden shadow-xl lg:shadow-2xl lg:row-span-2 border-2 lg:border-4 border-white">
                   <Image 
                      src={previewImages[0]} 
                      alt={section.title} 
                      fill 
                      className="object-cover group-hover:scale-105 transition-transform duration-700"
                   />
+                  {/* Mobile Only: Show "+ More" overlay on the single image */}
+                  <div className="lg:hidden absolute bottom-0 right-0 bg-black/60 text-white px-3 py-1 rounded-tl-lg text-sm font-medium">
+                    + {images.length} Photos
+                  </div>
                 </div>
               ) : (
-                <div className="bg-gray-200 rounded-2xl row-span-2 flex items-center justify-center text-gray-400">Add Image in CMS</div>
+                <div className="bg-gray-200 rounded-2xl flex items-center justify-center text-gray-400">Add Image</div>
               )}
 
-              <div className="flex flex-col gap-4 h-full">
+              {/* Image 2 & 3 (HIDDEN on Mobile to prevent "Strips", VISIBLE on Desktop) */}
+              <div className="hidden lg:flex flex-col gap-4 h-full">
                  {previewImages[1] && (
                    <div className="relative flex-1 rounded-2xl overflow-hidden shadow-xl border-2 border-white">
                      <Image src={previewImages[1]} alt="Gallery 2" fill className="object-cover" />
@@ -97,9 +102,9 @@ export default function ResortGallery({ sections }: { sections: any[] }) {
                  )}
                  
                  <div className="relative flex-1 rounded-2xl overflow-hidden shadow-xl bg-emerald-50 border-2 border-white">
-                   {previewImages[2] && <Image src={previewImages[2]} alt="Gallery 3" fill className="object-cover" />}
+                   {previewImages[2] && <Image src={previewImages[2]} alt="Gallery 3" fill className="object-cover" /> }
                    <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors flex items-center justify-center text-white font-bold backdrop-blur-[1px]">
-                     + Photos
+                     + More
                    </div>
                  </div>
               </div>
@@ -108,7 +113,6 @@ export default function ResortGallery({ sections }: { sections: any[] }) {
         );
       })}
 
-      {/* The Popup Lightbox */}
       <Lightbox
         open={open}
         close={() => setOpen(false)}
