@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import SmoothScrolling from "./components/SmoothScrolling"; // Import the engine
 
@@ -21,6 +22,7 @@ export default function RootLayout({
       <body className={`${inter.variable} ${playfair.variable} font-sans antialiased`}>
         <SmoothScrolling /> {/* <--- The Magic Engine runs here */}
         {children}
+        <Analytics />
       </body>
     </html>
   );
